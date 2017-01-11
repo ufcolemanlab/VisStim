@@ -14,6 +14,7 @@ import numpy as np
 import csv as csv
 import sys
 
+import serial.tools.list_ports
 from pyfirmata import Arduino, util, serial
 
 class PhantomController:
@@ -59,29 +60,6 @@ if connected_device == None:
             except serial.SerialException:
                 pass
             
-#Open serial port
-ports = list(serial.tools.list_ports.comports())
-connected_device = None
-for p in ports:
-    if 'Arduino' in p[1]:
-        try:
-            board = Arduino(p[0])
-            connected_device = p[1]
-            print "Connected to Arduino"
-            print connected_device
-            break
-        except serial.SerialException:
-            print "Arduino detected but unable to connect to " + p[0]
-if connected_device == None:
-    for p in ports:
-        if 'ttyACM' in p[0]:
-            try:
-                board = Arduino(p[0])
-                connected_device = p[1]
-                print "connected"
-                break
-            except serial.SerialException:
-                pass
 
 if connected_device is not None:
     it = util.Iterator(board)
@@ -456,17 +434,17 @@ class MainApp(tk.Tk):
     
     #length in seconds for static image and drifting, length in number of reversals for phase reversal (2 * num stims)
     #(pin_a, pin_b, draw, setPhase, drift, shift)
-    def build_stim(self, stim, type, length, **kwargs):
-        if type == 'gray':
+    def build_stim(self, stim, stim_type, length, **kwargs):
+        if stim_type == 'gray':
             for frame in range(int(length * self.refresh_rate)):
                 self.frame_list.append((0.0, 0.0,stim.draw, stim.setPhase, tuple((0.0,))))
-        if type == 'drift':
+        if stim_type == 'drift':
             for frame in range(int(length * self.refresh_rate)):
                 if 'direction' in kwargs:
                     self.frame_list.append((1.0, 1.0, stim.draw, stim.setPhase, tuple((self.drift_rate,kwargs['direction']))))
                 else:
                     self.frame_list.append((1.0, 1.0, stim.draw, stim.setPhase, tuple((self.drift_rate,'+'))))
-        if type == 'reversal':
+        if stim_type == 'reversal':
             for reversal in range(length):
                 for frame in range(int(self.refresh_rate / kwargs['frequency'])):
                     self.frame_list.append((1.0, 1.0, stim.draw, stim.setPhase, tuple((0.0,))))
